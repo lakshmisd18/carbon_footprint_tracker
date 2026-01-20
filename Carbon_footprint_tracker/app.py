@@ -4,7 +4,8 @@ from collections import defaultdict
 import json
 from functools import wraps
 
-from models import db, User, Activity   # ✅ FIXED IMPORT
+from carbon_footprint_tracker.models import db, User, Activity
+
 
 app = Flask(__name__)
 app.secret_key = "secret123"

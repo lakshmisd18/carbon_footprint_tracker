@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #000;
+            color: #e5e7eb;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background: #020617;
+            position: fixed;
+            padding: 25px;
+        }
+
+        .sidebar h4 {
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #94a3b8;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            text-decoration: none;
+        }
+
+        .sidebar a:hover {
+            background: #111827;
+            color: white;
+        }
+
+        .main {
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .card-box {
+            background: #020617;
+            padding: 20px;
+            border-radius: 14px;
+            border-left: 5px solid #3b82f6;
+        }
+
+        table th {
+            background: #020617;
+            color: white;
+        }
+
+        table td {
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+    <h4>🔐 Admin Panel</h4>
+    <a><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="{{ url_for('logout') }}" class="text-danger">
+        <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+    <h3 class="mb-4">System Analytics</h3>
+
+    <!-- ===== KPI CARDS ===== -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card-box">
+                <h6>Total Users</h6>
+                <h3>{{ total_users }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-box">
+                <h6>Total Activities</h6>
+                <h3>{{ total_activities }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-box">
+                <h6>Total Emissions</h6>
+                <h3>{{ total_emission }} kg</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-box">
+                <h6>Admin</h6>
+                <h3>{{ admin.name }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CHARTS ===== -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card-box">
+                <h6>Category-wise Emissions</h6>
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-box">
+                <h6>Monthly Emission Trend</h6>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== USER RANKING ===== -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card-box">
+                <h6>Top Emission Contributors</h6>
+                <canvas id="userChart"></canvas>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card-box">
+                <h6>Recent Activities</h6>
+                <table class="table table-dark table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Emission</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in recent_activities %}
+                        <tr>
+                            <td>{{ a.user_id }}</td>
+                            <td>{{ a.activity_type }}</td>
+                            <td>{{ a.emission }} kg</td>
+                            <td>{{ a.date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== CHARTS ===== -->
+<script>
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Transport', 'Electricity', 'Food'],
+            datasets: [{
+                data: [
+                    {{ transport_emission }},
+                    {{ electricity_emission }},
+                    {{ food_emission }}
+                ]
+            }]
+        }
+    });
+
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'line',
+        data: {
+            labels: {{ monthly_labels | safe }},
+            datasets: [{
+                data: {{ monthly_values | safe }},
+                fill: false,
+                tension: 0.4
+            }]
+        }
+    });
+
+    new Chart(document.getElementById('userChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ top_user_labels | safe }},
+            datasets: [{
+                label: 'Emission (kg)',
+                data: {{ top_user_values | safe }}
+            }]
+        }
+    });
+</script>
+
+</body>
+</html>

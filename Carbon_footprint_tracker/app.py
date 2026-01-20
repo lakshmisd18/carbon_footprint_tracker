@@ -6,6 +6,8 @@ from functools import wraps
 from models import db, User, Activity
 
 
+
+
 app = Flask(__name__)
 app.secret_key = "secret123"
 

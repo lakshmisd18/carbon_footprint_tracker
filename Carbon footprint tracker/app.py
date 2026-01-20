@@ -3,7 +3,8 @@ from datetime import datetime
 from collections import defaultdict
 import json
 from functools import wraps
-from .models import db, User, Activity
+
+from models import db, User, Activity   # ✅ FIXED IMPORT
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -12,6 +13,10 @@ app.secret_key = "secret123"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///carbon_footprint.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
+
+# ✅ IMPORTANT FOR RENDER
+with app.app_context():
+    db.create_all()
 
 # -------------------- EMISSION FACTORS --------------------
 EMISSION_FACTORS = {
@@ -64,11 +69,7 @@ def login():
             db.session.commit()
 
         session["user_id"] = user.id
-
-        if user.role == "admin":
-            return redirect(url_for("admin_dashboard", admin_id=user.id))
-        else:
-            return redirect(url_for("dashboard", user_id=user.id))
+        return redirect(url_for("dashboard", user_id=user.id))
 
     return render_template("login.html")
 
@@ -79,48 +80,11 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# ==================== ADMIN DASHBOARD ====================
-@app.route("/admin/<int:admin_id>")
-@login_required
-@admin_required
-def admin_dashboard(admin_id):
-    admin = User.query.get_or_404(admin_id)
-
-    users = User.query.all()
-    activities = Activity.query.all()
-
-    total_users = len(users)
-    total_activities = len(activities)
-    total_emission = sum(a.emission for a in activities)
-
-    category_emission = defaultdict(float)
-    for a in activities:
-        category_emission[a.activity_type] += a.emission
-
-    monthly_emission = defaultdict(float)
-    for a in activities:
-        month = a.date.strftime("%Y-%m")
-        monthly_emission[month] += a.emission
-
-    sorted_months = sorted(monthly_emission.keys())
-    monthly_values = [monthly_emission[m] for m in sorted_months]
-
-    return render_template(
-        "admin_dashboard.html",
-        admin=admin,
-        total_users=total_users,
-        total_activities=total_activities,
-        total_emission=round(total_emission, 2),
-        monthly_labels=json.dumps(sorted_months),
-        monthly_values=json.dumps(monthly_values)
-    )
-
 # ==================== USER DASHBOARD ====================
 @app.route("/dashboard/<int:user_id>")
 @login_required
 def dashboard(user_id):
     user = User.query.get_or_404(user_id)
-
     activities = Activity.query.filter_by(user_id=user_id).all()
     total_emission = sum(a.emission for a in activities)
 
@@ -152,9 +116,3 @@ def add_activity(user_id):
     db.session.commit()
 
     return redirect(url_for("dashboard", user_id=user_id))
-
-# ==================== MAIN ====================
-if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
